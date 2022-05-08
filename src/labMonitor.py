@@ -11,14 +11,14 @@ class Watchdog:
         ignore_patterns = None
         ignore_directories = True
         case_sensitive = False
-        eventHandlerPDF = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
+        eventHandler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
         reader = Read()
-        eventHandlerPDF.on_created = reader.on_PDF_received
+        eventHandler.on_created = reader.on_files_received
 
         # Create observer (watches for new PDFs that are received)
-        path = "../receivedPDFs/"
+        path = "../labFiles/"
         observer = Observer()
-        observer.schedule(eventHandlerPDF, path, recursive=False)
+        observer.schedule(eventHandler, path, recursive=False)
 
         observer.start()
 
