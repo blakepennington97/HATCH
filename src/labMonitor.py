@@ -4,7 +4,7 @@ from watchdog.events import PatternMatchingEventHandler
 from readGUI import Read
 
 
-class Watchdog:
+class Consumer:
     def Start(self):
         # Create event handler (what to do when PDF received)
         patterns = ["*"]
@@ -12,8 +12,7 @@ class Watchdog:
         ignore_directories = True
         case_sensitive = False
         eventHandler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
-        reader = Read()
-        eventHandler.on_created = reader.on_files_received
+        eventHandler.on_created = Read().on_files_received
 
         # Create observer (watches for new PDFs that are received)
         path = "../labFiles/"

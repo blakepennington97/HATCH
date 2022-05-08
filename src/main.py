@@ -1,5 +1,5 @@
 from readGUI import Read
-from labMonitor import Watchdog
+from labMonitor import Consumer
 from fhirclient import client
 import fhirclient.models.patient as patient
 import fhirclient.models.humanname as humanname
@@ -79,7 +79,7 @@ print(first_name, last_name, birth_date, age, gender, telecom)
 # TODO: GUI generate a list of test that the physician can select from
 
 # -------------- create GUI --------------------
-class MainWindow(QMainWindow):
+class WriteWindow(QWidget):
     def __init__(self):
         super().__init__()
         #self.tests_ordered = []
@@ -127,10 +127,8 @@ class MainWindow(QMainWindow):
         # self.dialog = ConfirmPage()
         layout.addWidget(button_generate)
 
-        widget = QWidget()
-        widget.setLayout(layout)
+        self.setLayout(layout)
 
-        self.setCentralWidget(widget)
 
     def generate_button_is_clicked(self):
         for test in self.combo.tests_ordered:
@@ -165,12 +163,21 @@ class MainWindow(QMainWindow):
 #         button_generate.clicked.connect(self.generate_button_is_clicked)
 #         layout = QVBoxLayout()
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    app.exec()
-    Watchdog().Start()  # begin looking for new PDFs
+class Main:
+    def new_order_button_clicked(self):
+        write_window = WriteWindow()
+
+
+
+    def view_orders_button_clicked(self):
+        # Read
+        Consumer().Start()  # begin looking for new PDFs
+
+
+
+
+
+
 
 # window = QWidget()
 # layout = QVBoxLayout()

@@ -7,6 +7,34 @@ import os
 from fhirclient import server
 from fhirclient import client
 import fhirclient.server as fhir_server
+from pdfminer.high_level import extract_text
+from time import time
+
+
+class ReadGUI(QWidget):
+    def __init__(self):
+        super().__init__()
+        # Buttons & combobox widgets
+        view_button = QPushButton('View PDF')
+        upload_button = QPushButton('Upload To EHR')
+        combo = QComboBox()
+        patients = [f'PatientId: {str(patientId)}, DoctorId: {str(doctorId)}' for patientId, doctorId in
+                    Read().get_lab_results().keys()]
+        combo.addItems(patients)
+        combo.activated[str].connect(Read.on_combobox_changed)
+
+        # More setup
+        layout = QVBoxLayout()
+
+        # Add widgets to GUI
+        layout.addWidget(view_button)
+        layout.addWidget(upload_button)
+        layout.addWidget(combo)
+
+        self.setLayout(layout)
+        view_button.clicked.connect(Read.on_view_PDF_button_clicked)
+        upload_button.clicked.connect(Read.on_upload_to_EHR_button_clicked)
+        #self.show()
 
 
 class Read:
@@ -24,7 +52,7 @@ class Read:
             self.patient_Id, self.doctor_Id = self.parse_id_file(file_path)
         elif '.pdf' in file_path:
             self.file_path = file_path
-        if self.patient_Id != -1 and file_path == self.file_path:
+        if (self.patient_Id != "" and '.pdf' in file_path) or (self.file_path != "" and '.txt' in file_path):
             print(f'Received patientID {self.patient_Id} lab results!')
             # We have received both id file and PDF file
             file_name = file_path.split('/')[-1]
@@ -32,7 +60,8 @@ class Read:
             # Reset our saved ids and file path, so they can be used for later results
             self.patient_Id = self.doctor_Id = -1
             file_path = ""
-            self.displayGUI()
+            reader = ReadGUI()
+            reader.show()
 
     def parse_id_file(self, file_path):
         patientId = doctorId = -1
@@ -56,16 +85,32 @@ class Read:
         subprocess.Popen([path], shell=True)
 
     def on_upload_to_EHR_button_clicked(self):
-        file_name = self.lab_results[self.current_selected_patient]
+        self.parse_PDF_data()
+
+    def parse_PDF_data(self):
         # TODO: Fix this file pathing
+        # file_name = self.lab_results[self.current_selected_patient]
         # cwd = os.getcwd()
         # path_to_PDF = cwd + "..\\labFiles\\" + file_name
         path = r'..\labFiles\test_pdf1.pdf'
-        # settings = {
-        #     'app_id': 'my_web_app',
-        #     'api_base': 'http://wildfhir4.aegis.net/fhir4-0-1'
-        # }
-        # smart_client = client.FHIRClient(settings=settings)
+        data = extract_text(path)
+        # progressBar = QProgressBar()
+        # progressBar.setGeometry(0, 0, 300, 100)
+        # progressBar.setMaximum(100)
+        # progressBar.show()
+        # count = 0
+        # while count < 100:
+        #     count += 1
+        #     time.sleep(1)
+        #     progressBar.setValue(count)
+        print(data)
+
+    def upload_to_EHR(self):
+        settings = {
+            'app_id': 'my_web_app',
+            'api_base': 'http://wildfhir4.aegis.net/fhir4-0-1'
+        }
+        smart_client = client.FHIRClient(settings=settings)
         # smart_server = server.FHIRServer(smart_client, base_uri='http://wildfhir4.aegis.net/fhir4-0-1')
         #
         # smart_server.pos
@@ -74,7 +119,6 @@ class Read:
         # patient = p.Patient.read('f001', smart.server)
         # print('Birth Date', patient.birthDate.isostring)
         # print('Patient Name', smart.human_name(patient.name[0]))
-
 
     def on_combobox_changed(self, text):
         patientId = doctorId = ''
@@ -86,34 +130,5 @@ class Read:
                 doctorId = id.split(': ')[-1]
         self.current_selected_patient = (patientId, doctorId)
 
-    def displayGUI(self):
-        # Initialize GUI
-        app = QApplication(["Lab Results"])
-        app.setStyle('Fusion')
-        palette = QPalette()
-        palette.setColor(QPalette.ButtonText, Qt.red)
-        app.setPalette(palette)
-
-        # Buttons & combobox widgets
-        view_button = QPushButton('View PDF')
-        upload_button = QPushButton('Upload To EHR')
-        combo = QComboBox()
-        patients = [f'PatientId: {str(patientId)}, DoctorId: {str(doctorId)}' for patientId, doctorId in
-                    self.lab_results.keys()]
-        combo.addItems(patients)
-        combo.activated[str].connect(self.on_combobox_changed)
-
-        # More setup
-        window = QWidget()
-        layout = QVBoxLayout()
-
-        # Add widgets to GUI
-        layout.addWidget(view_button)
-        layout.addWidget(upload_button)
-        layout.addWidget(combo)
-
-        window.setLayout(layout)
-        view_button.clicked.connect(self.on_view_PDF_button_clicked)
-        upload_button.clicked.connect(self.on_upload_to_EHR_button_clicked)
-        window.show()
-        app.exec()
+    def get_lab_results(self):
+        return self.lab_results
