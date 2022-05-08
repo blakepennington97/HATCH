@@ -10,6 +10,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore
 import gui_helper as gui_helper
+import json
 import fhirclient.models.medication as medication
 from functools import partial
 
@@ -74,8 +75,6 @@ if patient is not None:
 print(first_name, last_name, birth_date, age, gender, telecom)
 
 
-# TODO: GUI should have a list of the patient's data
-# assume that right now all the patient data is pulled
 # TODO: GUI generate a list of test that the physician can select from
 
 # -------------- create GUI --------------------
@@ -87,13 +86,13 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
 
         # TODO: null checker
-        patient_info = {"Patient ID": patient_id if patient_id is not None else "None",
-                        "First Name": first_name if first_name is not None else "None",
-                        "Last Name": last_name if last_name is not None else "None",
-                        "Birth Date": birth_date if birth_date is not None else "None",
-                        "Age": age if age is not None else "None",
-                        "Gender": gender if gender is not None else "None",
-                        "Contact": telecom if telecom is not None else "None"
+        patient_info = {"Patient ID: ": patient_id if patient_id is not None else "None",
+                        "First Name: ": first_name if first_name is not None else "None",
+                        "Last Name: ": last_name if last_name is not None else "None",
+                        "Birth Date: ": birth_date if birth_date is not None else "None",
+                        "Age: ": age if age is not None else "None",
+                        "Gender: ": gender if gender is not None else "None",
+                        "Contact: ": telecom if telecom is not None else "None"
                         # TODO: add medication
                         # "Medications": medication if medication is not None else "None"
                         }
@@ -121,11 +120,33 @@ class MainWindow(QMainWindow):
             self.combo.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
             self.combo.lineEdit().setAlignment(QtCore.Qt.AlignVCenter)
 
+        self.prompt_select = QLabel("\nPlease select tests to order")
+        self.prompt_select.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.prompt_select)
         layout.addWidget(self.combo)
-        button_generate = QPushButton("Generate")
-        button_generate.clicked.connect(self.generate_button_is_clicked)
-        # self.dialog = ConfirmPage()
-        layout.addWidget(button_generate)
+
+        self.order_status_title = QLabel("List of Tests Selected")
+        self.order_status_title.setAlignment(QtCore.Qt.AlignCenter)
+        self.order_status_title.setVisible(False)
+        layout.addWidget(self.order_status_title)
+
+        self.order_info = QLabel("")
+        self.order_info.setVisible(False)
+        layout.addWidget(self.order_info)
+
+        self.order_status = QLabel("")
+        self.order_status.setAlignment(QtCore.Qt.AlignCenter)
+        self.order_status.setVisible(False)
+        layout.addWidget(self.order_status)
+
+        self.button_generate = QPushButton("Order")
+        self.button_generate.clicked.connect(self.generate_button_is_clicked)
+        layout.addWidget(self.button_generate)
+        #
+        # self.new_order_button = QPushButton("New Order")
+        # self.new_order_button.clicked.connect(self.new_order_button_is_clicked)
+        # self.new_order_button.setVisible(False)
+        # layout.addWidget(self.new_order_button)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -133,8 +154,41 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 
     def generate_button_is_clicked(self):
+        dictionary = {'testsOrdered': self.combo.tests_ordered}
+        json_string = json.dumps(dictionary, indent=4)
+        file_name = "../orders/" + first_name + last_name + "_tests_ordered.txt"
+        self.print_tests(json_string)
+        f = open(file_name, "w")
+        f.write(json_string)
+        f.close()
+
+        self.order_status_title.setVisible(True)
+        self.order_info.setText(self.combo.tests_ordered_info)
+        self.order_info.setVisible(True)
+
+        if self.button_generate.text() == "Order":
+            self.order_status.setVisible(True)
+            self.order_status.setText("Please confirm tests ordered")
+            self.button_generate.setText("Confirmed")
+        elif self.button_generate.text() == "Confirmed":
+            self.button_generate.setText("New Order")
+            self.order_status_title.setText("List of Tests Ordered")
+            self.order_status.setText("Tests ordered!")
+            # self.new_order_button.setVisible(True)
+        else:
+            self.restart()
+            self.close()
+
+    def restart(self):
+
+        status = QtCore.QProcess.startDetached(sys.executable, sys.argv)
+        QApplication.quit()
+        print(status)
+
+    def print_tests(self, json_string):
         for test in self.combo.tests_ordered:
             print(test)
+        print(json_string)
 
 
 # class ConfirmPage(MainWindow):
@@ -170,97 +224,5 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     app.exec()
-    Watchdog().Start()  # begin looking for new PDFs
-
-# window = QWidget()
-# layout = QVBoxLayout()
-# layout.addWidget(QPushButton('Get Patient Data from EHR'))
-# TODO: add logic for getting patient data
-
-
-# layout.addWidget(button_generateData)
-# window.setLayout(layout)
-# window.show()
-
-
-# TODO: double check information with the physician before sending the file
-
-
-#
-# self.active = None
-# """ Whether this patient's record is in active use.
-# Type `bool`. """
-#
-# self.address = None
-# """ Addresses for the individual.
-# List of `Address` items (represented as `dict` in JSON). """
-#
-# self.animal = None
-# """ This patient is known to be an animal (non-human).
-# Type `PatientAnimal` (represented as `dict` in JSON). """
-#
-# self.birthDate = None
-# """ The date of birth for the individual.
-# Type `FHIRDate` (represented as `str` in JSON). """
-#
-# self.communication = None
-# """ A list of Languages which may be used to communicate with the
-# patient about his or her health.
-# List of `PatientCommunication` items (represented as `dict` in JSON). """
-#
-# self.contact = None
-# """ A contact party (e.g. guardian, partner, friend) for the patient.
-# List of `PatientContact` items (represented as `dict` in JSON). """
-#
-# self.deceasedBoolean = None
-# """ Indicates if the individual is deceased or not.
-# Type `bool`. """
-#
-# self.deceasedDateTime = None
-# """ Indicates if the individual is deceased or not.
-# Type `FHIRDate` (represented as `str` in JSON). """
-#
-# self.gender = None
-# """ male | female | other | unknown.
-# Type `str`. """
-#
-# self.generalPractitioner = None
-# """ Patient's nominated primary care provider.
-# List of `FHIRReference` items referencing `Organization, Practitioner` (represented as `dict` in JSON). """
-#
-# self.identifier = None
-# """ An identifier for this patient.
-# List of `Identifier` items (represented as `dict` in JSON). """
-#
-# self.link = None
-# """ Link to another patient resource that concerns the same actual
-# person.
-# List of `PatientLink` items (represented as `dict` in JSON). """
-#
-# self.managingOrganization = None
-# """ Organization that is the custodian of the patient record.
-# Type `FHIRReference` referencing `Organization` (represented as `dict` in JSON). """
-#
-# self.maritalStatus = None
-# """ Marital (civil) status of a patient.
-# Type `CodeableConcept` (represented as `dict` in JSON). """
-#
-# self.multipleBirthBoolean = None
-# """ Whether patient is part of a multiple birth.
-# Type `bool`. """
-#
-# self.multipleBirthInteger = None
-# """ Whether patient is part of a multiple birth.
-# Type `int`. """
-#
-# self.name = None
-# """ A name associated with the patient.
-# List of `HumanName` items (represented as `dict` in JSON). """
-#
-# self.photo = None
-# """ Image of the patient.
-# List of `Attachment` items (represented as `dict` in JSON). """
-#
-# self.telecom = None
-# """ A contact detail for the individual.
-# List of `ContactPoint` items (represented as `dict` in JSON). """
+    Watchdog().Start() # begin looking for new PDFs
+    sys.exit(app.exec_())
