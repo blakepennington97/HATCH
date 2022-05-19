@@ -63,7 +63,7 @@ if patient is not None:
 
     if patient.contact is not None and patient.contact[0] is not None and patient.contact[0].telecom is not None and \
             patient.contact[0].telecom[0] is not None and patient.contact[0].telecom[0].value is not None:
-        telecom = patient.contact[0].telecome[0].value
+        telecom = patient.contact[0].telecom[0].value
 
     # TODO: display address
     # address = patient.address[0].line[0] if patient.address[0].line[0] is not None else ""
